@@ -1,15 +1,26 @@
 package com.onesaf.farm.model;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
- * OneSAF TDB文件格式版本信息
+ * 表示FARM中的Version结构
  */
 @Data
+@NoArgsConstructor
 public class Version {
-    private short version;  // 版本号，目前为8
-    private short format;   // 格式号，目前为0
-    private short update;   // 更新号，目前为0
+    private int versionNumber;  // 当前为8
+    private int formatNumber;   // 当前为0
+    private int updateNumber;   // 当前为0
 
-    // 总大小：6字节
+    public Version(int versionNumber, int formatNumber, int updateNumber) {
+        this.versionNumber = versionNumber;
+        this.formatNumber = formatNumber;
+        this.updateNumber = updateNumber;
+    }
+
+    @Override
+    public String toString() {
+        return versionNumber + "." + formatNumber + "." + updateNumber;
+    }
 }
