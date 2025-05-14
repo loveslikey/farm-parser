@@ -27,27 +27,47 @@ public class BinaryReader implements Closeable {
     }
 
     public int readUInt16() throws IOException {
-        int value = inputStream.readUnsignedShort();
         if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
-            return ((value & 0xFF) << 8) | ((value & 0xFF00) >> 8);
+            // 首先读取两个字节
+            int b1 = inputStream.readUnsignedByte();
+            int b2 = inputStream.readUnsignedByte();
+
+            // 使用小端字节序将它们组合
+            return (b2 << 8) | b1;
+        } else {
+            // 大端字节序，直接读取无符号短整型
+            return inputStream.readUnsignedShort();
         }
-        return value;
     }
 
     public short readInt16() throws IOException {
-        short value = inputStream.readShort();
         if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
-            return (short) (((value & 0xFF) << 8) | ((value & 0xFF00) >> 8));
+            // 首先读取两个字节
+            int b1 = inputStream.readUnsignedByte();
+            int b2 = inputStream.readByte();
+
+            // 使用小端字节序将它们组合
+            return (short)((b2 << 8) | b1);
+        } else {
+            // 大端字节序，直接读取有符号短整型
+            return inputStream.readShort();
         }
-        return value;
     }
 
     public int readInt32() throws IOException {
-        int value = inputStream.readInt();
         if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
-            return Integer.reverseBytes(value);
+            // 首先读取四个字节
+            int b1 = inputStream.readUnsignedByte();
+            int b2 = inputStream.readUnsignedByte();
+            int b3 = inputStream.readUnsignedByte();
+            int b4 = inputStream.readByte(); // 最高位可能为负
+
+            // 使用小端字节序将它们组合
+            return (b4 << 24) | (b3 << 16) | (b2 << 8) | b1;
+        } else {
+            // 大端字节序，直接读取有符号整型
+            return inputStream.readInt();
         }
-        return value;
     }
 
     public long readUInt32() throws IOException {
@@ -86,17 +106,42 @@ public class BinaryReader implements Closeable {
         return inputStream.readBoolean();
     }
 
+    /**
+     * 读取一个字符串，格式为：
+     * - UInt16长度
+     * - 字符数据
+     * - 如果长度是奇数，则有一个填充字节
+     */
     public String readString() throws IOException {
-        int length = readUInt16();
-        byte[] bytes = new byte[length];
-        inputStream.readFully(bytes);
+        try {
+            // 读取字符串长度
+            int length = readUInt16();
 
-        // 如果长度是奇数，读取一个额外的字节作为填充
-        if (length % 2 != 0) {
-            inputStream.readByte();
+            if (length == 0) {
+                // 空字符串，但仍需要考虑可能的填充
+                return "";
+            }
+
+            if (length > 10000) {
+                // 防止异常长度导致内存问题
+                throw new IOException("字符串长度异常: " + length);
+            }
+
+            // 读取字符数据
+            byte[] bytes = new byte[length];
+            inputStream.readFully(bytes);
+
+            // 如果长度是奇数，读取一个额外的字节作为填充
+            if (length % 2 != 0) {
+                inputStream.readByte();
+            }
+
+            return new String(bytes, StandardCharsets.UTF_8);
+        } catch (EOFException e) {
+            throw new IOException("读取字符串时遇到文件结束", e);
+        } catch (Exception e) {
+            throw new IOException("读取字符串时出错: " + e.getMessage(), e);
         }
-
-        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     public UUID readUUID() throws IOException {

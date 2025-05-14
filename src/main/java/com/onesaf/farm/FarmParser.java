@@ -18,6 +18,7 @@ public class FarmParser {
 
     public static void main(String[] args) {
         args=new String[]{"read","E:\\project\\onesaf-v9.0\\support\\terrain\\build65\\v1\\taiwan_demo","E:\\project\\onesaf-v9.0\\support\\terrain\\build65\\v1\\config"};
+
         if (args.length < 1) {
             printUsage();
             return;
@@ -106,6 +107,7 @@ public class FarmParser {
             printFarmStatistics();
         } else {
             System.err.println("FARM数据读取失败: " + failureReason);
+            System.out.println("请检查farm-parser.log文件获取更多调试信息");
         }
     }
 
